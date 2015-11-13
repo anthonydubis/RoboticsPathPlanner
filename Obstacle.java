@@ -7,4 +7,13 @@ public class Obstacle {
 	{
 		vertices.add(vertex);
 	}
+	
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+
+		for (Point p : vertices)
+			builder.append("\t" + p + "\n");
+
+        return builder.toString(); 
+    }
 }
