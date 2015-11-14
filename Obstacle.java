@@ -16,4 +16,8 @@ public class Obstacle {
 
         return builder.toString(); 
     }
+
+    public ArrayList<Point> getVerticies() {
+    	return vertices;
+    }
 }
