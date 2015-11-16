@@ -153,6 +153,17 @@ class PointsPanel extends JPanel
 
     }
 
+    public void connectPoints(Graphics g, Point root, ArrayList<Point> connect, Color color) {
+        int x1 = dataToMapCoord(root.getX());
+        int y1 = dataToMapCoord(root.getY());
+        g.setColor(color);
+        for (int i = 0; i < connect.size(); i++) {
+            int x2 = dataToMapCoord(connect.get(i).getX());
+            int y2 = dataToMapCoord(connect.get(i).getX());
+            g.drawLine(y1, x1, y2, x2);
+        }
+    }
+
     public void drawStartGoal(Graphics g) {
     	int start_x = dataToMapCoord(start.getX());
     	int start_y = dataToMapCoord(start.getY());
@@ -282,8 +293,6 @@ class PointsPanel extends JPanel
         }
         return temp;
     }
-
-
  
     public ArrayList<Vertex> genVisGraph(ArrayList<Point> a) {
         ArrayList<Vertex> graph = new ArrayList<Vertex>();
