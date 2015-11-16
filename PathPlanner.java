@@ -146,11 +146,18 @@ class PointsPanel extends JPanel
         for (Vertex v : path){
             path_points.add(v.getPt());
         }
+        
+        ArrayList<Point> adjList_points = new ArrayList<Point>();
+        for (Vertex v1 : graph){
+            for (Vertex v2 : v1.getAdjList()){
+                adjList_points.add(v2.getPt());
+            }
+            connectPoints(g, v1.getPt(), adjList_points, Color.green);
+            adjList_points.clear();
+        }
 
         // Draw D's path
         drawBorders(g, path_points, Color.red, false);
-
-
     }
 
     public void connectPoints(Graphics g, Point root, ArrayList<Point> connect, Color color) {
