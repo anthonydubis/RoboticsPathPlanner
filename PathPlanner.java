@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import javax.swing.*;
 import java.util.*;
+import java.lang.Math;
+import java.io.PrintWriter;
+import java.io.FileNotFoundException;
 
 public class PathPlanner extends JFrame {
 	private Point start;
@@ -118,12 +121,36 @@ class PointsPanel extends JPanel
         g.setColor(getBackground()); //colors the window
         g.fillRect(0, 0, getWidth(), getHeight());
         g.setColor(getForeground()); //set color and fonts
-        drawBorders(g, world.getVerticies(), Color.blue);
+        drawBorders(g, world.getVerticies(), Color.blue, true);
         drawObstacles(g, obstacles, Color.blue);
         drawStartGoal(g);
         growObstacles(g);
         drawObstacles(g, grownObstacles, Color.yellow);
         revalidate();
+
+        // Set up for visibility graph
+        ArrayList<Point> points = new ArrayList<Point>();
+        points.add(start);
+        points.add(goal);
+        for (Obstacle o : grownObstacles){
+            for (Point pt : o.getVerticies()){
+                points.add(pt);
+            }
+        }
+        System.out.println(grownObstacles.size());
+        ArrayList<Vertex> graph = genVisGraph(points);
+        ArrayList<Vertex> path = dijkstras(graph, graph.get(0), graph.get(1));
+        printPathToFile("path.txt", path);
+
+        ArrayList<Point> path_points = new ArrayList<Point>();
+        for (Vertex v : path){
+            path_points.add(v.getPt());
+        }
+
+        // Draw D's path
+        drawBorders(g, path_points, Color.red, false);
+
+
     }
 
     public void drawStartGoal(Graphics g) {
@@ -140,11 +167,11 @@ class PointsPanel extends JPanel
 
     public void drawObstacles(Graphics g, ArrayList<Obstacle> obs, Color color) {
     	for (int a = 0; a < obs.size(); a++) {
-    		drawBorders(g, obs.get(a).getVerticies(), color);
+    		drawBorders(g, obs.get(a).getVerticies(), color, true);
     	}
     }
 
-    public void drawBorders(Graphics g, ArrayList<Point> vertices, Color color) {
+    public void drawBorders(Graphics g, ArrayList<Point> vertices, Color color, boolean complete) {
     	for (int i = 0; i < vertices.size()-1; i++) {
         	Point a = vertices.get(i);
         	int x1 = dataToMapCoord(a.getX());
@@ -155,7 +182,7 @@ class PointsPanel extends JPanel
 			int y2 = dataToMapCoord(b.getY());
 
 			// Connect the first point to the last point
-    		if (i == vertices.size()-2) {
+    		if (i == vertices.size()-2 && complete) {
     			Point c = vertices.get(0);
     			int x3 = dataToMapCoord(c.getX());
 				int y3 = dataToMapCoord(c.getY());
@@ -254,6 +281,127 @@ class PointsPanel extends JPanel
             }
         }
         return temp;
+    }
+
+
+ 
+    public ArrayList<Vertex> genVisGraph(ArrayList<Point> a) {
+        ArrayList<Vertex> graph = new ArrayList<Vertex>();
+        for (Point pt : a){
+            graph.add(new Vertex(pt));
+        }
+        for (int i = 0; i < graph.size(); i++){
+            for (int j = 0; j < i; j++){
+                if (isVisible(graph.get(i).getPt(), graph.get(j).getPt())){
+                    graph.get(i).adjList.add(graph.get(j));
+                    graph.get(j).addNeighbor(graph.get(i));
+                }
+            }
+        }
+        return graph;
+    }
+
+    public boolean isVisible(Point p1, Point p2){
+        boolean out = true;
+        for (Obstacle obstacle : obstacles){
+            for(int i = 0; i < obstacle.getVerticies().size() - 1; i++){
+                out = out && !doesIntersect(p1, p2, obstacle.getVerticies().get(i), 
+                    obstacle.getVerticies().get(i + 1));
+            }
+            out = out && !doesIntersect(p1, p2, obstacle.getVerticies().get(0), 
+                obstacle.getVerticies().get(obstacle.getVerticies().size() - 1));
+        }       
+        return out;
+    }
+
+    public boolean doesIntersect(Point p1, Point p2, Point p3, Point p4){
+            if (p1.equals(p3) || p2.equals(p3) || p1.equals(p4) || p2.equals(p4))
+                return false;
+
+            if ((orientation(p1,p2,p4) != orientation(p1,p2,p3)) && (orientation(p3,p4,p1) != orientation(p3,p4,p2))){
+                 return true;
+            }
+
+            if ((orientation(p1,p2,p4) == 0 && orientation(p1,p2,p3) == 0 
+                && orientation(p3,p4,p1) == 0 && orientation(p3,p4,p2) == 0)){
+                if (onSeg(p1,p2,p3) || onSeg(p1,p2,p4)){
+                System.out.println(p3);
+                 return true;
+                }  
+            }
+            return false;
+    }
+
+    public int orientation(Point p1, Point p2, Point p3){
+        double cp = ((p2.getX() - p1.getX()) * (p3.getY() - p1.getY()))  -  ((p2.getY() - p1.getY()) * (p3.getX()- p1.getX()));
+        if (cp == 0)
+            return 0;
+        if (cp > 0)
+            return 1;
+        else 
+            return 2;
+    }
+
+    public boolean onSeg(Point p1, Point p2, Point p3){
+        if((p3.getX() >= Math.min(p1.getX(),p2.getX())) && p3.getX() <= (Math.max(p1.getX(),p2.getX())))
+            return true;
+        return false;
+    }
+
+    public ArrayList<Vertex> dijkstras(ArrayList<Vertex> graph, Vertex from, Vertex to) {
+        reset(graph);
+
+        PriorityQueue<Vertex> vQ = new PriorityQueue<Vertex>();
+
+        from.setMinDist(0.0);
+        vQ.add(from);
+ 
+        while (!vQ.isEmpty()) {
+            Vertex v1 = vQ.poll();
+
+            for (Vertex v2 : v1.getAdjList()) {
+                double dist = v1.getPt().findDist(v2.getPt());
+
+                double distanceThrough1 = v1.getMinDist() + dist;
+
+                if (distanceThrough1 < v2.getMinDist()) {
+                    vQ.remove(v2);
+                    v2.setMinDist(distanceThrough1);
+                    v2.setUpdatedBy(v1);
+                    vQ.add(v2);
+                }
+            }
+
+        }
+
+        ArrayList<Vertex> path = new ArrayList<Vertex>();
+        for (Vertex v = to; v != null; v = v.getUpdatedBy()) {
+            path.add(v);
+        }
+
+        Collections.reverse(path);
+
+        return path;
+    }
+
+    public void reset(ArrayList<Vertex> graph) {
+        for (Vertex v : graph) {
+            v.setMinDist(Double.POSITIVE_INFINITY);
+            v.setUpdatedBy(null);
+        }
+    }
+
+    public void printPathToFile(String filename, ArrayList<Vertex> path){
+        try {
+            PrintWriter writer = new PrintWriter(filename);
+            for (Vertex v : path){
+                writer.println(v.getPt().getX() + " " + v.getPt().getY());
+            }
+            writer.close();
+        }
+        catch(FileNotFoundException e) {
+            System.err.println("FileNotFoundException");
+        }  
     }
 
     public void insertionSort(ArrayList<Point> a)
