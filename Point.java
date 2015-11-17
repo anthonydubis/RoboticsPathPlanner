@@ -38,6 +38,14 @@ public class Point {
         return Math.sqrt((x-point.getX())*(x-point.getX()) + (y-point.getY())*(y-point.getY()));
     }
 
+    public Point add(Point point) {
+        return new Point(x + point.getX(), y + point.getY());
+    }
+
+    public Point mult(int scale) {
+        return new Point(x * scale, y * scale);
+    }
+
     public int compareTo(Point point)
     {
         if (point.getAngle() > angle)

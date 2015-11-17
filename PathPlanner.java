@@ -105,7 +105,7 @@ class PointsPanel extends JPanel
 	ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
 	ArrayList<Obstacle> grownObstacles = new ArrayList<Obstacle>();
 	final int SCALE_FACTOR = 50;
-	final int ROBOT_SIZE = (int)(0.35 * SCALE_FACTOR);
+	final int ROBOT_SIZE = (int)(0.35 * SCALE_FACTOR / 2);
 
     public PointsPanel(Point st, Point gl, Obstacle wd, ArrayList<Obstacle> obs) {
 		setBackground(getBackground());
@@ -146,27 +146,36 @@ class PointsPanel extends JPanel
         for (Vertex v : path){
             path_points.add(v.getPt());
         }
-/*
+
         ArrayList<Point> adjList_points = new ArrayList<Point>();
         for (Vertex v1 : graph){
             for (Vertex v2 : v1.getAdjList()){
                 adjList_points.add(v2.getPt());
             }
-            connectPoints(g, v1.getPt(), adjList_points, Color.green);
+            connectPoints(g, v1.getPt(), adjList_points, Color.orange);
             adjList_points.clear();
         }
-*/
+
         // Draw D's path
         drawBorders(g, path_points, Color.red, false);
+    }
+
+    public void drawPoints(Graphics g, ArrayList<Point> points) {
+        for ( Point p : points ) {
+            int start_x = dataToMapCoord(p.getX());
+            int start_y = dataToMapCoord(p.getY());
+            g.setColor(Color.green);
+            g.fillRect(start_y, start_x, 5, 5);
+        }
     }
 
     public void connectPoints(Graphics g, Point root, ArrayList<Point> connect, Color color) {
         int x1 = dataToMapCoord(root.getX());
         int y1 = dataToMapCoord(root.getY());
-        g.setColor(color);
         for (int i = 0; i < connect.size(); i++) {
+            g.setColor(color);
             int x2 = dataToMapCoord(connect.get(i).getX());
-            int y2 = dataToMapCoord(connect.get(i).getX());
+            int y2 = dataToMapCoord(connect.get(i).getY());
             g.drawLine(y1, x1, y2, x2);
         }
     }
@@ -224,10 +233,10 @@ class PointsPanel extends JPanel
     			int x = dataToMapCoord(vertex.getX());
         		int y = dataToMapCoord(vertex.getY());
 
-    			grownObstacle.addVertex(new Point(y, x));
-    			grownObstacle.addVertex(new Point(y + ROBOT_SIZE, x));
-    			grownObstacle.addVertex(new Point(y, x + ROBOT_SIZE));
+    			grownObstacle.addVertex(new Point(y + ROBOT_SIZE, x - ROBOT_SIZE));
     			grownObstacle.addVertex(new Point(y + ROBOT_SIZE, x + ROBOT_SIZE));
+    			grownObstacle.addVertex(new Point(y - ROBOT_SIZE, x - ROBOT_SIZE));
+    			grownObstacle.addVertex(new Point(y - ROBOT_SIZE, x + ROBOT_SIZE));
     		}
     		grahamAlg(grownObstacle.getVerticies());
     	}
@@ -319,17 +328,33 @@ class PointsPanel extends JPanel
 
     public boolean isVisible(Point p1, Point p2){
         boolean out = true;
+        grownObstacles.add(world);
         for (Obstacle obstacle : grownObstacles){
+            Point temp1 = null;
+            Point temp2 = null;
+            int x = Math.abs(obstacle.getVerticies().indexOf(p2) - obstacle.getVerticies().indexOf(p1));
+            if (obstacle.getVerticies().contains(p1) && obstacle.getVerticies().contains(p2) && ((x == 1) || (x == obstacle.getVerticies().size() - 1))) {
+                return true;
+            }
             if (obstacle.getVerticies().contains(p1) && obstacle.getVerticies().contains(p2)){
                 return false;
             }
+            if (obstacle.getVerticies().contains(p1)){
+                temp2 = p2.add(p1.mult(-1)).mult(100).add(p1);
+            }
+            if (obstacle.getVerticies().contains(p2)){
+                temp1 = p1.add(p2.mult(-1)).mult(100).add(p2);
+            }
+            temp1 = (temp1 == null) ? p1 : temp1;
+            temp2 = (temp2 == null) ? p2 : temp2;
             for(int i = 0; i < obstacle.getVerticies().size() - 1; i++){
-                out = out && !doesIntersect(p1, p2, obstacle.getVerticies().get(i), 
+                out = out && !doesIntersect(temp1, temp2, obstacle.getVerticies().get(i), 
                     obstacle.getVerticies().get(i + 1));
             }
-            out = out && !doesIntersect(p1, p2, obstacle.getVerticies().get(0), 
+            out = out && !doesIntersect(temp1, temp2, obstacle.getVerticies().get(0), 
                 obstacle.getVerticies().get(obstacle.getVerticies().size() - 1));
         }       
+        grownObstacles.remove(world);
         return out;
     }
 
@@ -389,7 +414,6 @@ class PointsPanel extends JPanel
                     vQ.add(v2);
                 }
             }
-
         }
 
         ArrayList<Vertex> path = new ArrayList<Vertex>();
