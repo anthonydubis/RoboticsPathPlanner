@@ -137,7 +137,7 @@ class PointsPanel extends JPanel
                 points.add(pt);
             }
         }
-        System.out.println(grownObstacles.size());
+
         ArrayList<Vertex> graph = genVisGraph(points);
         ArrayList<Vertex> path = dijkstras(graph, graph.get(0), graph.get(1));
         printPathToFile("path.txt", path);
@@ -146,7 +146,7 @@ class PointsPanel extends JPanel
         for (Vertex v : path){
             path_points.add(v.getPt());
         }
-        
+/*
         ArrayList<Point> adjList_points = new ArrayList<Point>();
         for (Vertex v1 : graph){
             for (Vertex v2 : v1.getAdjList()){
@@ -155,7 +155,7 @@ class PointsPanel extends JPanel
             connectPoints(g, v1.getPt(), adjList_points, Color.green);
             adjList_points.clear();
         }
-
+*/
         // Draw D's path
         drawBorders(g, path_points, Color.red, false);
     }
@@ -309,7 +309,7 @@ class PointsPanel extends JPanel
         for (int i = 0; i < graph.size(); i++){
             for (int j = 0; j < i; j++){
                 if (isVisible(graph.get(i).getPt(), graph.get(j).getPt())){
-                    graph.get(i).adjList.add(graph.get(j));
+                    graph.get(i).addNeighbor(graph.get(j));
                     graph.get(j).addNeighbor(graph.get(i));
                 }
             }
@@ -319,7 +319,10 @@ class PointsPanel extends JPanel
 
     public boolean isVisible(Point p1, Point p2){
         boolean out = true;
-        for (Obstacle obstacle : obstacles){
+        for (Obstacle obstacle : grownObstacles){
+            if (obstacle.getVerticies().contains(p1) && obstacle.getVerticies().contains(p2)){
+                return false;
+            }
             for(int i = 0; i < obstacle.getVerticies().size() - 1; i++){
                 out = out && !doesIntersect(p1, p2, obstacle.getVerticies().get(i), 
                     obstacle.getVerticies().get(i + 1));
@@ -341,7 +344,6 @@ class PointsPanel extends JPanel
             if ((orientation(p1,p2,p4) == 0 && orientation(p1,p2,p3) == 0 
                 && orientation(p3,p4,p1) == 0 && orientation(p3,p4,p2) == 0)){
                 if (onSeg(p1,p2,p3) || onSeg(p1,p2,p4)){
-                System.out.println(p3);
                  return true;
                 }  
             }

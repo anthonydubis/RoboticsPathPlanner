@@ -2,7 +2,7 @@ import java.util.*;
 
 public class Vertex implements Comparable<Vertex>{
 	private Point pt;
-	public ArrayList<Vertex> adjList;
+	private ArrayList<Vertex> adjList;
 	private double minDist;
 	private Vertex updatedBy;
 
