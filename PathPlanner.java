@@ -1,4 +1,7 @@
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -77,10 +80,8 @@ public class PathPlanner extends JFrame {
 
 		// Set up points panel
 		pp = new PointsPanel(start, goal, world, obstacles);
-		//pp.setLayout(null);
 
 		// Add points panel to frame
-		//this.getContentPane().add(pp, BorderLayout.CENTER);
 		this.add(pp, BorderLayout.CENTER);
 		this.pack();
 		this.setVisible(true);
@@ -105,7 +106,7 @@ class PointsPanel extends JPanel
 	ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
 	ArrayList<Obstacle> grownObstacles = new ArrayList<Obstacle>();
 	final int SCALE_FACTOR = 50;
-	final int ROBOT_SIZE = (int)(0.35 * SCALE_FACTOR / 2);
+	final int ROBOT_SIZE = (int)(0.35 * SCALE_FACTOR / 1.75);
 
     public PointsPanel(Point st, Point gl, Obstacle wd, ArrayList<Obstacle> obs) {
 		setBackground(getBackground());
@@ -117,13 +118,35 @@ class PointsPanel extends JPanel
     	obstacles = obs;
     }
 
+    @Override
+    public void paint(Graphics g) {
+        BufferedImage im = new BufferedImage(this.getWidth(), this.getHeight(),
+                BufferedImage.TYPE_3BYTE_BGR);
+        // Paint normally but on the image
+        super.paint(im.getGraphics());
+
+        // Reverse the image
+        AffineTransform tx = AffineTransform.getScaleInstance(1, 1);
+        tx.rotate(Math.PI);
+        tx.translate(-im.getWidth(), -im.getHeight());
+        AffineTransformOp op = new AffineTransformOp(tx,
+                AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+        im = op.filter(im, null);
+
+        // Draw the reversed image on the screen
+        g.drawImage(im, 0, 0, null);
+    }
+
     public void paintComponent(Graphics g) {
+        // Draw world
         g.setColor(getBackground()); //colors the window
         g.fillRect(0, 0, getWidth(), getHeight());
         g.setColor(getForeground()); //set color and fonts
         drawBorders(g, world.getVerticies(), Color.blue, true);
         drawObstacles(g, obstacles, Color.blue);
         drawStartGoal(g);
+
+        // Grow and draw grown obstacles
         growObstacles(g);
         drawObstacles(g, grownObstacles, Color.yellow);
         revalidate();
@@ -138,6 +161,7 @@ class PointsPanel extends JPanel
             }
         }
 
+        // Visibility Graph and Dijkstras Algorithm
         ArrayList<Vertex> graph = genVisGraph(points);
         ArrayList<Vertex> path = dijkstras(graph, graph.get(0), graph.get(1));
         printPathToFile("path.txt", path);
@@ -147,6 +171,7 @@ class PointsPanel extends JPanel
             path_points.add(v.getPt());
         }
 
+        // Draw Visibility Graph
         ArrayList<Point> adjList_points = new ArrayList<Point>();
         for (Vertex v1 : graph){
             for (Vertex v2 : v1.getAdjList()){
@@ -156,7 +181,7 @@ class PointsPanel extends JPanel
             adjList_points.clear();
         }
 
-        // Draw D's path
+        // Draw Dijkstras's shortest path
         drawBorders(g, path_points, Color.red, false);
     }
 
@@ -334,6 +359,16 @@ class PointsPanel extends JPanel
             Point temp2 = null;
             int x = Math.abs(obstacle.getVerticies().indexOf(p2) - obstacle.getVerticies().indexOf(p1));
             if (obstacle.getVerticies().contains(p1) && obstacle.getVerticies().contains(p2) && ((x == 1) || (x == obstacle.getVerticies().size() - 1))) {
+                for(int i = 0; i < world.getVerticies().size() - 1; i++){
+                    if(doesIntersect(p1, p2, world.getVerticies().get(i), 
+                    world.getVerticies().get(i + 1))){
+                        return false;
+                    }
+                }
+                if(doesIntersect(p1, p2, world.getVerticies().get(0), 
+                    world.getVerticies().get(world.getVerticies().size() - 1))){
+                        return false;
+                }
                 return true;
             }
             if (obstacle.getVerticies().contains(p1) && obstacle.getVerticies().contains(p2)){
@@ -466,10 +501,10 @@ class PointsPanel extends JPanel
      * Add 300 to make origin in the center of the panel
      */
     public int dataToMapCoord(double value) {
-    	return (int)(value * SCALE_FACTOR + 300);
+    	return (int)(value * SCALE_FACTOR + 350);
     }
 
     public double mapToDataCoord(int value) {
-    	return ((double)value - 300) / SCALE_FACTOR;
+    	return ((double)value - 350) / SCALE_FACTOR;
     }
 }
