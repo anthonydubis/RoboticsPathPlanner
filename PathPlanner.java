@@ -106,7 +106,7 @@ class PointsPanel extends JPanel
 	ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
 	ArrayList<Obstacle> grownObstacles = new ArrayList<Obstacle>();
 	final int SCALE_FACTOR = 50;
-	final int ROBOT_SIZE = (int)(0.35 * SCALE_FACTOR / 1.75);
+	final int ROBOT_SIZE = (int)(0.4 * SCALE_FACTOR);
 
     public PointsPanel(Point st, Point gl, Obstacle wd, ArrayList<Obstacle> obs) {
 		setBackground(getBackground());
@@ -247,6 +247,10 @@ class PointsPanel extends JPanel
         }
     }
 
+    /**
+     * Reflection algorithm, this reflects the robot about the center of the
+     * robot (which means the verticies will grow by half of the robot size).
+     */
     public void growObstacles(Graphics g) {
     	// Iterate through each obstacle
     	for (int a = 0; a < obstacles.size(); a++) {
@@ -258,10 +262,10 @@ class PointsPanel extends JPanel
     			int x = dataToMapCoord(vertex.getX());
         		int y = dataToMapCoord(vertex.getY());
 
-    			grownObstacle.addVertex(new Point(y + ROBOT_SIZE, x - ROBOT_SIZE));
-    			grownObstacle.addVertex(new Point(y + ROBOT_SIZE, x + ROBOT_SIZE));
-    			grownObstacle.addVertex(new Point(y - ROBOT_SIZE, x - ROBOT_SIZE));
-    			grownObstacle.addVertex(new Point(y - ROBOT_SIZE, x + ROBOT_SIZE));
+    			grownObstacle.addVertex(new Point(y + ROBOT_SIZE / 2, x - ROBOT_SIZE / 2));
+    			grownObstacle.addVertex(new Point(y + ROBOT_SIZE / 2, x + ROBOT_SIZE / 2));
+    			grownObstacle.addVertex(new Point(y - ROBOT_SIZE / 2, x - ROBOT_SIZE / 2));
+    			grownObstacle.addVertex(new Point(y - ROBOT_SIZE / 2, x + ROBOT_SIZE / 2));
     		}
     		grahamAlg(grownObstacle.getVerticies());
     	}
